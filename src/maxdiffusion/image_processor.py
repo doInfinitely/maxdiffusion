@@ -85,6 +85,8 @@ class VaeImageProcessor(ConfigMixin):
         """
         Convert a numpy image or a batch of images to a PIL image.
         """
+        if images.ndim == 5:
+            images = images.squeeze(0)
         if images.ndim == 3:
             images = images[None, ...]
         images = (images * 255).round().astype("uint8")
@@ -94,10 +96,10 @@ class VaeImageProcessor(ConfigMixin):
         else:
             pil_images = []
             for image in images:
-                try:
-                    pil_images.append(Image.fromarray(image))
-                except:
-                    pass
+                #try:
+                pil_images.append(Image.fromarray(image))
+                #except:
+                #    pass
 
         return pil_images
 

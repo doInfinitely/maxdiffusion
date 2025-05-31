@@ -18,6 +18,7 @@ import functools
 from absl import app
 from typing import Sequence
 import time
+import os
 
 import numpy as np
 import jax

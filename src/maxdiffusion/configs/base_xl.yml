@@ -203,8 +203,8 @@ skip_first_n_steps_for_profiler: 5
 profiler_steps: 10
 
 # Generation parameters
-prompt: "A magical castle in the middle of a forest, artistic drawing"
-negative_prompt: "purple, red"
+prompt: "A curious Tangela, a grass-type Pokémon with blue vines enveloping its body, gazes forward with wide, expressive eyes and round pink feet visible."
+negative_prompt: ""
 do_classifier_free_guidance: True
 guidance_scale: 9.0
 # Based on 3.4. in https://arxiv.org/pdf/2305.08891.pdf

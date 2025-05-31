@@ -50,13 +50,19 @@ def loop_body(step, args, model, pipeline, prompt_embeds, guidance_scale, guidan
 
     latents_input = pipeline.scheduler.scale_model_input(scheduler_state, latents_input, t)
 
-    noise_pred = model.apply(
-        {"params" : state.params},
-        jnp.array(latents_input),
-        jnp.array(timestep, dtype=jnp.int32),
-        encoder_hidden_states=prompt_embeds
-    ).sample
+    # For SDXL, we need to provide additional conditioning
+    added_cond_kwargs = {
+        "text_embeds": pooled_prompt_embeds,  # You'll need to get this from text encoder 2
+        "time_ids": time_ids,  # You'll need to create this
+    }
 
+    noise_pred = model.apply(
+        {"params": unet_params},
+        sample,
+        timestep,
+        encoder_hidden_states,
+        added_cond_kwargs=added_cond_kwargs,
+    )
     noise_pred_uncond, noise_prediction_text = jnp.split(noise_pred, 2, axis=0)
     noise_pred = noise_pred_uncond + guidance_scale * (noise_prediction_text - noise_pred_uncond)
 
