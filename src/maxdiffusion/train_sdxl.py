@@ -57,7 +57,7 @@ from jax.sharding import PartitionSpec as P, PositionalSharding
 from transformers import set_seed
 
 from maxdiffusion.input_pipeline.input_pipeline_interface import (
-  make_pokemon_train_iterator
+  make_data_iterator
 )
 
 from maxdiffusion.maxdiffusion_utils import (
@@ -335,12 +335,14 @@ def train(config):
                                   global_batch_size=total_train_batch_size,
                                   p_vae_apply=p_vae_apply)
 
-        data_iterator = make_pokemon_train_iterator(
+        data_iterator = make_data_iterator(
            config,
-           mesh,
-           total_train_batch_size,
-           tokenize_fn,
-           image_transforms_fn
+           dataloading_host_index=0,
+           dataloading_host_count=1,
+           mesh=mesh,
+           global_batch_size=total_train_batch_size,
+           tokenize_fn=tokenize_fn,
+           image_transforms_fn=image_transforms_fn
         )
     else:
         raise ValueError(f"{config.dataset_name} is currently not supported in this pipeline.")
@@ -410,6 +412,9 @@ def train(config):
     mllog_utils.train_step_start(config, start_step)
     for step in np.arange(start_step, config.max_train_steps+1):
         example_batch = load_next_batch(data_iterator, example_batch, config)
+        if example_batch is None:
+            print("Training completed - reached end of dataset")
+            break  # Exit the training loop gracefully
         unet_state, train_metric, train_rngs = p_train_step(unet_state,
                                                             example_batch,
                                                             train_rngs)

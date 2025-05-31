@@ -117,7 +117,7 @@ dataset_name: 'diffusers/pokemon-gpt4-captions'
 dataset_save_location: '/tmp/pokemon-gpt4-captions_sd21'
 train_data_dir: ''
 dataset_config_name: ''
-cache_dir: ''
+cache_dir: '/tmp/jax_cache'
 image_column: 'image'
 caption_column: 'text'
 resolution: 768

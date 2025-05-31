@@ -20,6 +20,7 @@ import jax.numpy as jnp
 import numpy as np
 from flax.jax_utils import replicate
 from jax import pmap
+import random
 
 # Let's cache the model compilation, so that it doesn't take as long the next time around.
 from jax.experimental.compilation_cache import compilation_cache as cc
@@ -132,7 +133,7 @@ def generate(prompt, negative_prompt, seed=default_seed, guidance_scale=default_
     images = images.reshape((images.shape[0] * images.shape[1],) + images.shape[-3:])
     return pipeline.numpy_to_pil(np.array(images))
 
-
+'''
 # 8. The first forward pass after AOT compilation still takes a while longer than
 # subsequent passes, this is because on the first pass, JAX uses Python dispatch, which
 # Fills the C++ dispatch cache.
@@ -154,3 +155,16 @@ print(f"Inference in {time.time() - start}")
 
 for i, image in enumerate(images):
     image.save(f"castle_{i}.png")
+'''
+
+count = 0
+for j in range(10):
+    start = time.time()
+    prompt = "picture of Bruno Mars riding a panda, photorealistic"
+    neg_prompt = ""
+    images = generate(prompt, neg_prompt, random.randrange(2**31))
+    print(f"Inference in {time.time() - start}")
+
+    for i, image in enumerate(images):
+        image.save(f"../max_diffusion_images/allfours_{count+i}.png")
+    count += len(images)

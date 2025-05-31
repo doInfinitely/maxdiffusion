@@ -56,11 +56,11 @@ def transform_images(
       pixel_ids_key="pixel_values",
       p_vae_apply = None
       ):
-    """Preprocess images to latents."""
     images = list(examples[image_column])
     images = [np.asarray(image) for image in images]
+
     tensor_list = []
-    for image in images:
+    for i, image in enumerate(images):
         image = tf.image.resize(image, [image_resolution, image_resolution], method="bilinear", antialias=True)
         image = image / 255.0
         image = (image - 0.5) / 0.5

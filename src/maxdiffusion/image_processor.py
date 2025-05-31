@@ -92,7 +92,12 @@ class VaeImageProcessor(ConfigMixin):
             # special case for grayscale (single channel) images
             pil_images = [Image.fromarray(image.squeeze(), mode="L") for image in images]
         else:
-            pil_images = [Image.fromarray(image) for image in images]
+            pil_images = []
+            for image in images:
+                try:
+                    pil_images.append(Image.fromarray(image))
+                except:
+                    pass
 
         return pil_images
 

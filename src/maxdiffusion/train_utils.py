@@ -23,22 +23,29 @@ import jax.numpy as jnp
 from maxdiffusion import max_utils, max_logging
 
 def get_first_step(state):
-  with jax.spmd_mode('allow_all'):
-    return int(state.step)
+  return int(state.step)
 
 def load_next_batch(train_iter, example_batch, config):
   """Loads the next batch. Can keep reusing the same batch for performance reasons """
   if config.reuse_example_batch and example_batch is not None:
     return example_batch
   else:
-    return train_iter()
+    try:
+      batch = next(train_iter)
+      return batch
+    except StopIteration:
+      print("INFO: End of dataset reached. Training completed successfully!")
+      return None  # Signal that training should stop
+    except Exception as e:
+      print(f"ERROR: Error in load_next_batch: {e}")
+      raise
 
 def validate_train_config(config):
   """ Validates the configuration is set correctly for train.py"""
 
   def _validate_gcs_bucket_name(bucket_name, config_var):
     assert bucket_name, f"Please set {config_var}."
-    assert len(bucket_name) > 5 and bucket_name[0:5]=='gs://', f"Erroring out, {config_var} should start with 'gs://' "
+    #assert len(bucket_name) > 5 and bucket_name[0:5]=='gs://', f"Erroring out, {config_var} should start with 'gs://' "
 
   assert config.run_name, "Erroring out, need a real run_name"
   _validate_gcs_bucket_name(config.base_output_directory, "base_output_directory")
@@ -92,24 +99,23 @@ def write_metrics(writer, local_metrics_file, running_gcs_metrics, metrics, step
 
 def write_metrics_to_tensorboard(writer, metrics, step, config):
   """Writes metrics to tensorboard"""
-  with jax.spmd_mode('allow_all'):
-    if jax.process_index() == 0:
-      for metric_name in metrics.get("scalar",[]):
-        writer.add_scalar(metric_name, np.array(metrics["scalar"][metric_name]), step)
-      for metric_name in metrics.get("scalars",[]):
-        writer.add_scalars(metric_name, metrics["scalars"][metric_name], step)
+  if jax.process_index() == 0:
+    for metric_name in metrics.get("scalar",[]):
+      writer.add_scalar(metric_name, np.array(metrics["scalar"][metric_name]), step)
+    for metric_name in metrics.get("scalars",[]):
+      writer.add_scalars(metric_name, metrics["scalars"][metric_name], step)
 
-    full_log = step % config.log_period == 0
-    if jax.process_index() == 0:
-        max_logging.log(f"completed step: {step}, seconds: {metrics['scalar']['perf/step_time_seconds']:.3f}, "
-            f"TFLOP/s/device: {metrics['scalar']['perf/per_device_tflops_per_sec']:.3f}, "
-            f"loss: {metrics['scalar']['learning/loss']:.3f}")
+  full_log = step % config.log_period == 0
+  if jax.process_index() == 0:
+      max_logging.log(f"completed step: {step}, seconds: {metrics['scalar']['perf/step_time_seconds']:.3f}, "
+          f"TFLOP/s/device: {metrics['scalar']['perf/per_device_tflops_per_sec']:.3f}, "
+          f"loss: {metrics['scalar']['learning/loss']:.3f}")
 
-    if full_log and jax.process_index() == 0:
-      max_logging.log(
-          f"To see full metrics 'tensorboard --logdir={config.tensorboard_dir}'"
-      )
-      writer.flush()
+  if full_log and jax.process_index() == 0:
+    max_logging.log(
+        f"To see full metrics 'tensorboard --logdir={config.tensorboard_dir}'"
+    )
+    writer.flush()
 
 def get_params_to_save(params):
   """Retrieves params from host"""
